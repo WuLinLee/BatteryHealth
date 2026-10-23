@@ -221,21 +221,116 @@ try {
         return '/' + ($parts -join '/')
     }
 
-    $batteryRows = foreach ($battery in $batteries) {
+    # Build plain-language cards for everyday users. Technical XML remains available below.
+    $batteryCards = foreach ($battery in $batteries) {
         $safeId = ConvertTo-HtmlSafe $battery.Id
-        $cycleText = if ($null -ne $battery.CycleCount) { ConvertTo-HtmlSafe $battery.CycleCount } else { '未提供' }
+        $cycleText = if ($null -ne $battery.CycleCount) { '{0:N0} 次' -f $battery.CycleCount } else { '设备未提供' }
+        if ($null -ne $battery.CycleCount) {
+            $cycleHelp = '这是电池累计完成的充放电循环估算，不是插上充电器的次数。'
+        } else {
+            $cycleHelp = '部分电脑不提供这项数据；不影响健康度计算。'
+        }
+
         if ($battery.DesignCapacity -le 0 -or $battery.FullChargeCapacity -le 0) {
-            $healthText = '不可计算'; $wearText = '不可计算'; $statusText = '容量数据无效'; $statusClass = 'unknown'
+            $healthText = '暂不可计算'
+            $wearText = '暂无数据'
+            $wearLabel = '容量损耗'
+            $statusText = '系统没有提供有效容量'
+            $statusClass = 'unknown'
+            $headline = '暂时无法判断电池健康程度'
+            $plainExplanation = '系统报告中缺少可用于计算的容量数值。可以先查看下方详细信息，或重新生成一次报告。'
+            $barWidth = 0
         } else {
             $healthValue = [math]::Round(100.0 * $battery.FullChargeCapacity / $battery.DesignCapacity, 1)
             $wearValue = [math]::Round(100.0 - $healthValue, 1)
             $healthText = '{0:N1}%' -f $healthValue
-            $wearText = '{0:N1}%' -f $wearValue
-            if ($healthValue -lt 50) { $statusText = '容量损耗较大'; $statusClass = 'bad' }
-            elseif ($healthValue -lt 80) { $statusText = '容量有所衰减'; $statusClass = 'warn' }
-            else { $statusText = '容量状态良好'; $statusClass = 'good' }
+            $barWidth = [math]::Min(100, [math]::Max(0, $healthValue))
+
+            if ($healthValue -gt 100) {
+                $wearLabel = '与标称容量的差异'
+                $wearText = '高于标称 {0:N1}%' -f [math]::Abs($wearValue)
+                $statusText = '容量读数高于标称值'
+                $statusClass = 'good'
+                $headline = '当前读数高于电池出厂标称容量'
+                $plainExplanation = '这可能与电池容量估算或校准有关，不代表电池容量真的无限增加。可正常使用，并观察后续变化。'
+            } elseif ($healthValue -ge 90) {
+                $wearLabel = '大约损耗了'
+                $wearText = '{0:N1}%' -f $wearValue
+                $statusText = '状态不错'
+                $statusClass = 'good'
+                $headline = '电池状态看起来不错'
+                $plainExplanation = '现在充满时能储存的电量，仍接近新电池的标称容量。照常使用即可。'
+            } elseif ($healthValue -ge 80) {
+                $wearLabel = '大约损耗了'
+                $wearText = '{0:N1}%' -f $wearValue
+                $statusText = '总体尚可'
+                $statusClass = 'good'
+                $headline = '电池有一些自然损耗'
+                $plainExplanation = '现在能储存的电量比刚买时少了一些。通常不必只凭这个数字就更换；如果续航明显缩短，再进一步检查。'
+            } elseif ($healthValue -ge 50) {
+                $wearLabel = '大约损耗了'
+                $wearText = '{0:N1}%' -f $wearValue
+                $statusText = '容量下降较明显'
+                $statusClass = 'warn'
+                $headline = '电池续航可能已经变短'
+                $plainExplanation = '电池现在能储存的电量明显少于新电池。可以留意日常使用时间是否缩短；如果影响使用，再考虑检测或更换。'
+            } else {
+                $wearLabel = '大约损耗了'
+                $wearText = '{0:N1}%' -f $wearValue
+                $statusText = '容量衰减较多'
+                $statusClass = 'bad'
+                $headline = '电池可储存的电量已经明显减少'
+                $plainExplanation = '当前满充容量不到新电池标称值的一半，续航可能明显缩短。如果已经影响使用，建议进一步检测电池。'
+            }
         }
-        '<tr><td>{0}</td><td>{1:N0} mWh</td><td>{2:N0} mWh</td><td><strong>{3}</strong></td><td>{4}</td><td>{5}</td><td><span class="status {6}">{7}</span></td></tr>' -f $safeId, $battery.DesignCapacity, $battery.FullChargeCapacity, $healthText, $wearText, $cycleText, $statusClass, $statusText
+
+        $designWh = '{0:N1} Wh' -f ($battery.DesignCapacity / 1000.0)
+        $fullWh = '{0:N1} Wh' -f ($battery.FullChargeCapacity / 1000.0)
+        $designMwh = '{0:N0} mWh' -f $battery.DesignCapacity
+        $fullMwh = '{0:N0} mWh' -f $battery.FullChargeCapacity
+        $safeCycle = ConvertTo-HtmlSafe $cycleText
+        $safeCycleHelp = ConvertTo-HtmlSafe $cycleHelp
+        $safeHeadline = ConvertTo-HtmlSafe $headline
+        $safePlainExplanation = ConvertTo-HtmlSafe $plainExplanation
+        $safeStatusText = ConvertTo-HtmlSafe $statusText
+        $safeWearLabel = ConvertTo-HtmlSafe $wearLabel
+        $safeDesignWh = ConvertTo-HtmlSafe $designWh
+        $safeFullWh = ConvertTo-HtmlSafe $fullWh
+        $safeDesignMwh = ConvertTo-HtmlSafe $designMwh
+        $safeFullMwh = ConvertTo-HtmlSafe $fullMwh
+
+        $cardHtml = @"
+<article class="battery-card">
+  <div class="battery-card-head">
+    <div><div class="eyebrow">检测到的电池</div><h2>$safeId</h2></div>
+    <span class="status $statusClass">$safeStatusText</span>
+  </div>
+  <div class="health-hero">
+    <div class="health-number">$healthText</div>
+    <div class="health-copy"><h3>$safeHeadline</h3><p>$safePlainExplanation</p></div>
+  </div>
+  <div class="health-track" role="img" aria-label="按设计容量比例显示当前满充容量"><div class="health-fill $statusClass" style="width:$barWidth%"></div></div>
+  <div class="track-caption"><span>新电池标称容量：100%</span><span>当前满充容量：$healthText</span></div>
+  <div class="detail-grid">
+    <div class="detail-card"><span class="detail-label">新电池时的标称容量</span><strong>$safeDesignWh</strong><small>设计容量 · $safeDesignMwh</small></div>
+    <div class="detail-card"><span class="detail-label">现在充满大约能存多少</span><strong>$safeFullWh</strong><small>当前满充容量 · $safeFullMwh</small></div>
+    <div class="detail-card"><span class="detail-label">$safeWearLabel</span><strong>$wearText</strong><small>与新电池标称容量对比</small></div>
+    <div class="detail-card"><span class="detail-label">充放电循环次数</span><strong>$safeCycle</strong><small>$safeCycleHelp</small></div>
+  </div>
+</article>
+"@
+        $cardHtml
+    }
+
+    $batteryCardsHtml = $batteryCards -join [Environment]::NewLine
+    if (@($batteryCards).Count -eq 0) {
+        $batteryCardsHtml = @"
+<div class="empty-state">
+  <div class="empty-icon">i</div>
+  <h2>这次没有读到足够的电池容量数据</h2>
+  <p>系统仍然生成了原始报告，但暂时无法准确计算健康度。请向下展开“进阶信息”，查看电脑实际提供了哪些数据。脚本不会猜一个健康度出来。</p>
+</div>
+"@
     }
 
     $sectionHtml = New-Object 'System.Collections.Generic.List[string]'
@@ -314,81 +409,138 @@ $tableRows
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Windows 电池健康度与完整数据报告</title>
+<title>电池健康体检报告</title>
 <style>
-:root { color-scheme: light dark; } * { box-sizing: border-box; }
-body { margin: 0; padding: 28px 16px 48px; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background: #f2f5fa; color: #182235; line-height: 1.55; }
-main { max-width: 1180px; margin: auto; }
-header, section { background: #fff; border-radius: 15px; padding: 22px; margin-bottom: 18px; box-shadow: 0 6px 24px rgba(30,50,80,.07); }
-h1 { margin: 0 0 8px; font-size: clamp(25px, 4vw, 34px); } h2 { margin: 0 0 14px; font-size: 21px; }
-.muted { color: #687386; font-size: 13px; overflow-wrap: anywhere; } .lead { font-size: 15px; margin: 16px 0 0; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 20px; }
-.kpi { padding: 16px; border: 1px solid #e5eaf2; border-radius: 12px; background: #f9fbfe; min-width: 0; }
-.kpi .label { color: #67758a; font-size: 13px; margin-bottom: 5px; } .kpi .value { font-size: 22px; font-weight: 700; overflow-wrap: anywhere; }
-.table-wrap { width: 100%; overflow-x: auto; } table { width: 100%; border-collapse: collapse; min-width: 740px; }
-th, td { padding: 12px; text-align: left; vertical-align: top; border-bottom: 1px solid #e7ebf2; }
-th { background: #f7f9fc; font-size: 12px; color: #536176; white-space: nowrap; } td { font-size: 14px; overflow-wrap: anywhere; }
-.status { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-.good { background: #dcfce7; color: #166534; } .warn { background: #fef3c7; color: #92400e; } .bad { background: #fee2e2; color: #991b1b; } .unknown { background: #e5e7eb; color: #374151; }
-.link-button { display: inline-block; margin-top: 10px; padding: 10px 14px; border-radius: 9px; background: #1d4ed8; color: #fff; text-decoration: none; font-weight: 600; }
-.xml-section { border: 1px solid #e2e8f0; border-radius: 10px; margin: 10px 0; overflow: hidden; }
-.xml-section > summary { cursor: pointer; list-style: none; padding: 13px 15px; background: #f7f9fc; font-weight: 650; overflow-wrap: anywhere; }
-.xml-section > summary::-webkit-details-marker { display: none; } .xml-section > summary::before { content: "＋"; display: inline-block; width: 24px; color: #2563eb; }
-.xml-section[open] > summary::before { content: "－"; } .xml-section[open] > summary { border-bottom: 1px solid #e2e8f0; }
-.xml-section .table-wrap { padding: 0 12px 12px; } .data-table { min-width: 560px; } .data-table td.path { width: 42%; font-family: Consolas, "Courier New", monospace; color: #475569; font-size: 12px; }
-details.raw { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; } details.raw summary { cursor: pointer; padding: 14px; background: #f7f9fc; font-weight: 650; }
-pre { margin: 0; padding: 16px; max-height: 680px; overflow: auto; font: 12px/1.5 Consolas, "Courier New", monospace; white-space: pre; background: #0f172a; color: #e2e8f0; }
-.note { line-height: 1.75; color: #536176; font-size: 13px; } .footer { color: #6b7280; font-size: 12px; text-align: center; padding: 8px; overflow-wrap: anywhere; }
+:root { color-scheme: light; --ink:#15243b; --muted:#67768d; --line:#e6ebf2; --paper:#f3f6fb; --blue:#2864e8; }
+* { box-sizing:border-box; }
+body { margin:0; padding:28px 16px 48px; font-family:"Segoe UI","Microsoft YaHei",sans-serif; background:var(--paper); color:var(--ink); line-height:1.6; }
+main { max-width:960px; margin:0 auto; }
+.top { padding:8px 2px 22px; }
+.brand { color:var(--blue); font-size:12px; font-weight:800; letter-spacing:1.8px; text-transform:uppercase; }
+h1 { margin:6px 0 5px; font-size:clamp(28px,5vw,38px); line-height:1.2; letter-spacing:-.7px; }
+.subtitle { color:var(--muted); font-size:15px; }
+.timestamp { color:var(--muted); font-size:12px; margin-top:12px; }
+.battery-card, .panel { background:#fff; border:1px solid #e9eef5; border-radius:20px; padding:24px; margin-bottom:18px; box-shadow:0 8px 28px rgba(28,49,83,.055); }
+.battery-card-head { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:12px; }
+.eyebrow { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.4px; }
+.battery-card-head h2 { font-size:18px; margin:2px 0 0; }
+.status { display:inline-flex; align-items:center; padding:6px 11px; border-radius:999px; font-size:12px; font-weight:800; white-space:nowrap; }
+.good { color:#146c43; background:#e1f7ea; } .warn { color:#875400; background:#fff2cf; } .bad { color:#a52a2a; background:#ffe5e5; } .unknown { color:#475569; background:#edf0f4; }
+.health-hero { display:grid; grid-template-columns:auto 1fr; align-items:center; gap:22px; padding:6px 0 10px; }
+.health-number { color:var(--blue); font-size:clamp(52px,10vw,76px); font-weight:800; line-height:1; letter-spacing:-2px; font-variant-numeric:tabular-nums; }
+.health-copy h3 { margin:0 0 5px; font-size:20px; line-height:1.35; }
+.health-copy p { margin:0; color:#586982; font-size:14px; }
+.health-track { background:#e9eef5; height:12px; border-radius:99px; overflow:hidden; margin-top:15px; }
+.health-fill { height:100%; border-radius:99px; background:#17a66a; min-width:0; }
+.health-fill.warn { background:#e6a327; } .health-fill.bad { background:#dc5555; } .health-fill.unknown { background:#aab3c0; }
+.track-caption { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:#7a8799; font-size:11px; margin-top:7px; }
+.detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:23px; }
+.detail-card { border:1px solid var(--line); background:#fbfcfe; border-radius:14px; padding:16px; min-width:0; }
+.detail-label { display:block; color:var(--muted); font-size:12px; margin-bottom:5px; }
+.detail-card strong { display:block; font-size:22px; font-weight:750; letter-spacing:-.3px; overflow-wrap:anywhere; }
+.detail-card small { display:block; margin-top:5px; color:#7b8799; font-size:11px; overflow-wrap:anywhere; }
+.section-title { margin:0 0 6px; font-size:20px; }
+.section-intro { color:var(--muted); font-size:13px; margin:0 0 16px; }
+.plain-list { display:grid; gap:12px; }
+.plain-item { display:grid; grid-template-columns:30px 1fr; gap:10px; align-items:start; }
+.number { width:28px; height:28px; border-radius:9px; display:grid; place-items:center; background:#eaf0ff; color:#2457c5; font-weight:800; font-size:12px; }
+.plain-item strong { display:block; font-size:14px; margin:1px 0 3px; }
+.plain-item p { margin:0; color:#62718a; font-size:13px; }
+.tip { background:#f1f6ff; border:1px solid #dfebff; padding:14px 15px; border-radius:12px; color:#445c7a; font-size:12px; line-height:1.7; margin-top:17px; }
+.link-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:17px; }
+.link-button { display:inline-flex; align-items:center; gap:8px; background:#205ad8; color:#fff; text-decoration:none; padding:11px 15px; border-radius:10px; font-weight:700; font-size:13px; }
+.link-button:hover { background:#1749b7; }
+.link-help { color:var(--muted); font-size:12px; }
+.advanced { padding:0; overflow:hidden; }
+.advanced > summary { cursor:pointer; list-style:none; padding:18px 22px; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.advanced > summary::-webkit-details-marker { display:none; }
+.advanced > summary:after { content:"＋"; color:var(--blue); font-size:20px; }
+.advanced[open] > summary:after { content:"－"; }
+.advanced-content { padding:0 22px 22px; border-top:1px solid var(--line); }
+.xml-section { border:1px solid #e5eaf1; border-radius:10px; margin:10px 0; overflow:hidden; }
+.xml-section > summary { cursor:pointer; list-style:none; padding:12px 13px; background:#f7f9fc; font-weight:650; font-size:12px; overflow-wrap:anywhere; }
+.xml-section > summary::-webkit-details-marker { display:none; }
+.xml-section > summary:before { content:"＋"; display:inline-block; width:22px; color:var(--blue); }
+.xml-section[open] > summary:before { content:"－"; }
+.xml-section .table-wrap { padding:0 10px 10px; overflow-x:auto; }
+.data-table { width:100%; border-collapse:collapse; min-width:460px; }
+.data-table th,.data-table td { text-align:left; padding:9px; border-bottom:1px solid var(--line); vertical-align:top; font-size:12px; overflow-wrap:anywhere; }
+.data-table th { color:var(--muted); background:#fff; }
+.data-table td.path { width:43%; color:#52627a; font:11px Consolas,"Courier New",monospace; }
+details.raw { border:1px solid #e5eaf1; border-radius:10px; overflow:hidden; margin-top:14px; }
+details.raw summary { cursor:pointer; padding:12px 13px; background:#f7f9fc; font-size:12px; font-weight:700; }
+pre { margin:0; padding:14px; max-height:520px; overflow:auto; font:11px/1.5 Consolas,"Courier New",monospace; white-space:pre; background:#111b2d; color:#e1e9f5; }
+.empty-state { background:#fff8e8; border:1px solid #f1dca7; border-radius:16px; padding:24px; margin-bottom:18px; }
+.empty-icon { display:grid; place-items:center; width:32px; height:32px; border-radius:50%; background:#ffedbf; color:#805500; font-weight:900; }
+.empty-state h2 { margin:10px 0 5px; font-size:19px; } .empty-state p { margin:0; color:#725b2e; font-size:13px; }
+.footer { text-align:center; color:#8995a6; font-size:11px; padding:6px; }
+@media (max-width:580px) {
+ body { padding:17px 10px 32px; } .battery-card,.panel { padding:17px; border-radius:16px; }
+ .health-hero { grid-template-columns:1fr; gap:10px; } .health-number { font-size:64px; }
+ .detail-grid { grid-template-columns:1fr 1fr; gap:8px; } .detail-card { padding:12px; } .detail-card strong { font-size:18px; }
+ .section-title { font-size:18px; } .advanced > summary { padding:16px; } .advanced-content { padding:0 12px 15px; }
+}
 @media (prefers-color-scheme: dark) {
- body { background: #101827; color: #e5eaf2; } header, section { background: #1c2737; }
- .kpi { background: #202e41; border-color: #344256; } .kpi .label, .muted, .note, .footer { color: #bdc9da; }
- th, .xml-section > summary, details.raw summary { background: #263449; color: #dbe5f2; } th, td, .xml-section, details.raw, .xml-section[open] > summary { border-color: #3a4658; }
- .data-table td.path { color: #bdc9da; }
+ :root { color-scheme:dark; --ink:#e7edf6; --muted:#b3bfd0; --line:#354257; --paper:#101827; --blue:#80aaff; }
+ body { background:var(--paper); color:var(--ink); } .battery-card,.panel { background:#1b2738; border-color:#29364a; }
+ .health-copy p,.plain-item p,.link-help { color:#b8c5d8; } .detail-card { background:#202d40; border-color:#354257; }
+ .detail-card small,.track-caption { color:#a9b8cb; } .health-track { background:#344258; }
+ .tip { background:#1d2e48; border-color:#2e466b; color:#c4d8fb; }
+ .advanced-content { border-color:#354257; } .xml-section,.details.raw { border-color:#354257; }
+ .xml-section > summary,details.raw summary { background:#243248; } .data-table th { background:#1b2738; }
+ .data-table td.path { color:#c0ccdc; } .data-table th,.data-table td { border-color:#354257; }
+ .empty-state { background:#3a301b; border-color:#645027; } .empty-icon { background:#57451e; color:#ffdfa0; }
+ .empty-state p { color:#e1ce9e; }
 }
 </style>
 </head>
-<body><main>
-<header>
-<h1>Windows 电池健康度与完整数据报告</h1>
-<div class="muted">生成时间：$safeGeneratedAt · 数据来源：Windows 内置 powercfg</div>
-<p class="lead">$safeBatterySummary</p>
-<div class="grid">
-<div class="kpi"><div class="label">识别到的有效电池条目</div><div class="value">$($batteries.Count)</div></div>
-<div class="kpi"><div class="label">XML 元素数</div><div class="value">$totalElementCount</div></div>
-<div class="kpi"><div class="label">字段值和属性总数</div><div class="value">$totalFieldCount</div></div>
-<div class="kpi"><div class="label">原始 XML 大小</div><div class="value">$xmlSizeKb KB</div></div>
-</div>
-$nativeHtmlLink
+<body>
+<main>
+<header class="top">
+  <div class="brand">BATTERY HEALTH · 本机报告</div>
+  <h1>电池健康体检报告</h1>
+  <div class="subtitle">先看健康度，其他信息都用简单的话说明。</div>
+  <div class="timestamp">报告生成时间：$generatedAt</div>
 </header>
-<section>
-<h2>一、电池健康度概览</h2>
-<p class="note">健康度 = 当前满充容量 ÷ 设计容量 × 100%。容量损耗估算 = 100% − 健康度。该比例是根据 Windows 报告容量计算的估算值，并非专业检测仪测量结果。健康度超过 100% 也可能出现，不一定代表故障。</p>
-<div class="table-wrap"><table>
-<thead><tr><th>电池 ID</th><th>设计容量</th><th>当前满充容量</th><th>健康度估算</th><th>容量损耗估算</th><th>循环次数</th><th>状态评估</th></tr></thead>
-<tbody>
-$($batteryRows -join [Environment]::NewLine)
-</tbody></table></div>
+
+$batteryCardsHtml
+
+<section class="panel">
+  <h2 class="section-title">这几个数字怎么看？</h2>
+  <p class="section-intro">不用了解技术术语，记住下面几点就够了。</p>
+  <div class="plain-list">
+    <div class="plain-item"><div class="number">1</div><div><strong>健康度：现在的电池和新电池相比，还能存多少电</strong><p>例如 85%，表示根据系统报告估算，目前充满时能储存的电量约为新电池标称值的 85%。</p></div></div>
+    <div class="plain-item"><div class="number">2</div><div><strong>容量损耗：相比新电池，大约少了多少储电能力</strong><p>健康度 85%，就大约损耗了 15%。这不等于当前电量，也不直接表示还剩多少使用时间。</p></div></div>
+    <div class="plain-item"><div class="number">3</div><div><strong>循环次数：累计使用过多少个完整充放电循环</strong><p>不是每插一次充电器就算一次。部分电脑不提供循环次数，所以显示“设备未提供”很正常。</p></div></div>
+  </div>
+  <div class="tip"><strong>温馨提示：</strong>健康度是 Windows 根据电池报告容量计算出来的估算值。它不能单独判断电池是否故障；实际续航还会受屏幕亮度、运行的软件、温度和使用方式影响。若电池出现鼓包或机身被顶起，应停止使用并尽快联系维修人员。</div>
 </section>
-<section>
-<h2>二、XML 全部字段（可展开查询）</h2>
-<p class="note">按原始 XML 的一级节点分组，逐项列出全部叶子节点值和 XML 属性，包括不参与健康度计算的历史记录及 Windows 版本新增字段。可用浏览器 Ctrl+F 搜索。字段与数值均来自本机报告；不存在的数据不会猜测补齐。</p>
-$sectionHtmlText
+
+<section class="panel">
+  <h2 class="section-title">想看 Windows 原版详细报告？</h2>
+  <p class="section-intro">这里的中文页面适合日常查看；Windows 原版报告会包含更多历史记录和图表，信息也更技术化。</p>
+  <div class="link-row">
+    $nativeHtmlLink
+    <span class="link-help">原版报告生成失败时，这个链接可能不可用。</span>
+  </div>
 </section>
-<section>
-<h2>三、原始 XML 全文</h2>
-<p class="note">原始 XML 作为纯文本安全展示，便于核对和排查问题。</p>
-<details class="raw"><summary>展开原始 XML</summary><pre>$rawXmlSafe</pre></details>
+
+<section class="panel advanced">
+  <details class="advanced">
+    <summary>进阶信息：查看系统提供的全部字段（一般不用看）</summary>
+    <div class="advanced-content">
+      <p class="section-intro">以下内容主要用于排查问题。Windows 版本或设备厂商不同，字段名称和数量也可能不同。</p>
+      $sectionHtmlText
+      <details class="raw"><summary>展开原始 XML 全文（技术内容）</summary><pre>$rawXmlSafe</pre></details>
+      <p class="section-intro">原始 XML 文件位置：$safeXmlPath</p>
+    </div>
+  </details>
 </section>
-<section>
-<h2>四、文件与兼容性说明</h2>
-<p class="note"><strong>原始 XML：</strong> $safeXmlPath</p>
-<p class="note"><strong>Windows 原生完整报告：</strong>桌面上的 BatteryReport-Windows.html（状态：$nativeStatusText），包含 Windows 报告支持的近期使用、使用历史、容量历史和电池寿命估算等章节。</p>
-<p class="note"><strong>循环次数：</strong>取决于设备固件和 Windows 报告，不保证所有型号均提供。</p>
-<p class="note"><strong>多电池：</strong>展示所有可识别的有效电池条目；即使有条目缺少关键容量，原始 XML 全部字段区仍会将可用数据列出。</p>
-<p class="note"><strong>兼容性：</strong>使用 Windows 自带 PowerShell 和 powercfg，不调用 WMI、不安装第三方模块。不同 Windows 版本及设备固件提供的字段可能不同。</p>
-</section>
-<div class="footer">BatteryHealth · 本地生成的离线报告 · 未上传任何电池数据</div>
-</main></body></html>
+
+<div class="footer">本地生成 · 电池数据不会由此脚本上传到网络</div>
+</main>
+</body>
+</html>
 "@
 
     Set-Content -LiteralPath $htmlPath -Value $html -Encoding UTF8
@@ -398,7 +550,7 @@ $sectionHtmlText
     if ($nativeHtmlAvailable) {
         Write-Host ("Windows full report saved at: {0}" -f $nativeHtmlPath) -ForegroundColor Green
     }
-    Write-Host ("Detailed HTML report saved at: {0}" -f $htmlPath) -ForegroundColor Green
+    Write-Host ("Friendly HTML report saved at: {0}" -f $htmlPath) -ForegroundColor Green
     Write-Host 'Opening the detailed HTML report in your default browser...' -ForegroundColor Cyan
     Start-Process -FilePath $htmlPath
     Write-Host 'Health = Full charge capacity / Design capacity * 100%.'
