@@ -83,6 +83,7 @@
 - [koetsuji/Windows-Battery-Report](https://github.com/koetsuji/Windows-Battery-Report)：浏览器仪表盘风格的电池报告工具；参考其把关键指标前置展示的思路。
 - [auberginehill/get-battery-info](https://github.com/auberginehill/get-battery-info)：展示一般计算机与电池信息，并保存 Windows 电池报告文件。
 - [Microsoft Learn — powercfg 命令行选项（中文）](https://learn.microsoft.com/zh-cn/windows-hardware/design/device-experiences/powercfg-command-line-options)：官方说明 `/batteryreport`、`/output` 和 `/xml` 等选项。
+- [Microsoft Learn — CIM_Battery（电池容量字段说明）](https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/cim-battery)：说明设计容量与满充容量的含义，以及 80% 可作为寿命终点的一般参考之一，而非单独的故障诊断。
 
 ## 仓库文件
 
