@@ -377,6 +377,19 @@ try {
         $reportHtml = [regex]::Replace($reportHtml, $pattern, $replacement)
     }
 
+    # Some Windows builds draw history charts with dark shading on a dark-themed report.
+    # Use a pale fill and readable axis labels so charts stay clear on the forced white background.
+    $reportHtml = [regex]::Replace(
+        $reportHtml,
+        '(?i)(shadingColor\s*:\s*["''])#[0-9a-f]{6}(["''])',
+        '$1#e8eef7$2'
+    )
+    $reportHtml = [regex]::Replace(
+        $reportHtml,
+        '(?i)(context\.fillStyle\s*=\s*["''])#00b0f0(["''];)',
+        '$1#52627a$2'
+    )
+
     $summaryHtml = @"
 <section id="batteryhealth-summary" lang="zh-CN">
   <div class="bh-intro">
