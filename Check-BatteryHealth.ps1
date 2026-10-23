@@ -436,7 +436,7 @@ try {
         $sectionDetailHtml = @"
 <details class="xml-section">
 <summary>$safeSectionTitle</summary>
-<div class="table-wrap"><table class="data-table"><thead><tr><th>信息名称（已尽量翻译）<br><small>括号内为系统原字段名</small></th><th>系统记录的内容</th></tr></thead><tbody>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>信息名称（已尽量翻译）<br><small>下方小字保留系统原字段路径</small></th><th>系统记录的内容</th></tr></thead><tbody>
 $tableRows
 </tbody></table></div>
 </details>
