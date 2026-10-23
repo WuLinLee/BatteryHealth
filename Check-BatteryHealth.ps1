@@ -1,4 +1,4 @@
-﻿﻿﻿$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 # Battery health checker inspired by open-source PowerShell implementations:
 # - homotechsual/Blog-Scripts: powercfg XML report parsing
@@ -90,8 +90,8 @@ $powercfg = Join-Path $env:WINDIR 'System32\powercfg.exe'
 
 try {
     Write-Host ''
-    Write-Host 'Windows Battery Health Check' -ForegroundColor Cyan
-    Write-Host 'Uses the built-in powercfg XML battery report.' -ForegroundColor DarkGray
+    Write-Host 'Windows 电池健康检查' -ForegroundColor Cyan
+    Write-Host '使用 Windows 自带的电池报告，并在原报告上翻译常见字段。' -ForegroundColor DarkGray
     Write-Host ''
 
     if (-not (Test-Path -LiteralPath $powercfg)) {
@@ -104,7 +104,7 @@ try {
         Remove-Item -LiteralPath $xmlPath -Force
     }
 
-    Write-Host 'Generating XML report on Desktop...' -ForegroundColor Yellow
+    Write-Host '正在生成原始 XML 数据...' -ForegroundColor Yellow
     & $powercfg /batteryreport /xml /output $xmlPath
 
     if ($LASTEXITCODE -ne 0) {
@@ -143,8 +143,8 @@ try {
         Write-Host ("Report: {0}" -f $xmlPath)
     }
 
-    Write-Section 'RESULTS'
-    Write-Host ("Battery entries found: {0}" -f $batteries.Count)
+    Write-Section '电池健康度结果'
+    Write-Host ("识别到的电池条目：{0}" -f $batteries.Count)
 
     $index = 0
     foreach ($battery in $batteries) {
@@ -195,7 +195,7 @@ try {
         return [System.Net.WebUtility]::HtmlEncode([string]$Value)
     }
 
-    # Build plain-language cards for everyday users. Technical XML remains available below.
+    # Build plain-language health cards; native Windows report details remain below.
     $batteryCards = foreach ($battery in $batteries) {
         $safeId = ConvertTo-HtmlSafe $battery.Id
         $cycleText = if ($null -ne $battery.CycleCount) { '{0:N0} 次' -f $battery.CycleCount } else { '设备未提供' }
@@ -302,7 +302,7 @@ try {
 <div class="empty-state">
   <div class="empty-icon">i</div>
   <h2>这次没有读到足够的电池容量数据</h2>
-  <p>系统仍然生成了原始报告，但暂时无法准确计算健康度。请向下展开“进阶信息”，查看电脑实际提供了哪些数据。脚本不会猜一个健康度出来。</p>
+  <p>系统仍然生成了原始报告，但暂时无法准确计算健康度。请继续向下查看 Windows 原版报告。脚本不会猜一个健康度出来。</p>
 </div>
 "@
     }
