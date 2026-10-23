@@ -120,27 +120,25 @@ try {
     [xml]$document = New-Object System.Xml.XmlDocument
     $document.Load($xmlPath)
 
-    # Create Microsoft's native HTML report too, so history charts and estimates remain available.
-    $nativeHtmlAvailable = $false
-    try {
-        if (Test-Path -LiteralPath $nativeHtmlPath) { Remove-Item -LiteralPath $nativeHtmlPath -Force }
-        & $powercfg /batteryreport /output $nativeHtmlPath | Out-Null
-        if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $nativeHtmlPath) -and
-            (Get-Item -LiteralPath $nativeHtmlPath).Length -gt 0) {
-            $nativeHtmlAvailable = $true
-        } else {
-            Write-Host 'Windows native HTML report was not created; XML details will still be shown.' -ForegroundColor Yellow
-        }
-    } catch {
-        Write-Host 'Windows native HTML report could not be generated; continuing with XML details.' -ForegroundColor Yellow
+    # Generate Windows' original HTML to a temporary file; it will be translated and merged below.
+    if (Test-Path -LiteralPath $nativeHtmlPath) {
+        Remove-Item -LiteralPath $nativeHtmlPath -Force
+    }
+    Write-Host '正在生成 Windows 原版完整 HTML 报告...' -ForegroundColor Yellow
+    & $powercfg /batteryreport /output $nativeHtmlPath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "powercfg 生成 HTML 报告失败，退出代码：$LASTEXITCODE"
+    }
+    if (-not (Test-Path -LiteralPath $nativeHtmlPath) -or (Get-Item -LiteralPath $nativeHtmlPath).Length -eq 0) {
+        throw 'Windows 没有生成有效的 HTML 电池报告。'
     }
 
     $batteries = @(Get-BatteryEntries $document)
 
     if ($batteries.Count -eq 0) {
-        Write-Host 'No valid battery capacity entries were found in the XML report.' -ForegroundColor Yellow
-        Write-Host 'The detailed HTML report will still be created to show the XML fields.' -ForegroundColor Yellow
-        Write-Host ("Report: {0}" -f $xmlPath)
+        Write-Host 'XML 报告中没有找到可用于计算健康度的容量数据。' -ForegroundColor Yellow
+        Write-Host '仍会显示 Windows 原版报告，但健康度将标记为暂不可计算。' -ForegroundColor Yellow
+        Write-Host ("原始 XML：{0}" -f $xmlPath)
     }
 
     Write-Section '电池健康度结果'
@@ -150,13 +148,13 @@ try {
     foreach ($battery in $batteries) {
         $index++
         Write-Host ''
-        Write-Host ("Battery {0}: {1}" -f $index, $battery.Id) -ForegroundColor Cyan
+        Write-Host ("电池 {0}：{1}" -f $index, $battery.Id) -ForegroundColor Cyan
 
-        Write-Host ("  Design capacity      : {0:N0} mWh" -f $battery.DesignCapacity)
-        Write-Host ("  Full charge capacity : {0:N0} mWh" -f $battery.FullChargeCapacity)
+        Write-Host ("  新电池标称容量：{0:N0} mWh" -f $battery.DesignCapacity)
+        Write-Host ("  当前满充容量：{0:N0} mWh" -f $battery.FullChargeCapacity)
 
         if ($battery.DesignCapacity -le 0 -or $battery.FullChargeCapacity -le 0) {
-            Write-Host '  Health                : Not available (capacity is zero)' -ForegroundColor Red
+            Write-Host '  健康度：暂不可计算（容量为零）' -ForegroundColor Red
             continue
         }
 
@@ -176,15 +174,15 @@ try {
             $status = 'Capacity is generally good'
         }
 
-        Write-Host ("  Battery health        : {0:N1}%" -f $health) -ForegroundColor $color
-        Write-Host ("  Estimated capacity loss: {0:N1}%" -f $wear) -ForegroundColor $color
-        Write-Host ("  Assessment            : {0}" -f $status) -ForegroundColor $color
+        Write-Host ("  电池健康度：{0:N1}%" -f $health) -ForegroundColor $color
+        Write-Host ("  估算容量损耗：{0:N1}%" -f $wear) -ForegroundColor $color
+        Write-Host ("  状态判断：{0}" -f $status) -ForegroundColor $color
 
         if ($null -ne $battery.CycleCount) {
-            Write-Host ("  Cycle count            : {0}" -f $battery.CycleCount)
+            Write-Host ("  充放电循环次数：{0}" -f $battery.CycleCount)
         }
         else {
-            Write-Host '  Cycle count            : Not provided by firmware/report' -ForegroundColor DarkGray
+            Write-Host '  充放电循环次数：设备未提供' -ForegroundColor DarkGray
         }
     }
 
