@@ -95,7 +95,7 @@ try {
     Write-Host ''
 
     if (-not (Test-Path -LiteralPath $powercfg)) {
-        throw 'Windows powercfg.exe was not found.'
+        throw '找不到 Windows 自带的 powercfg.exe。'
     }
 
     # Remove an older report first, so an unsuccessful command cannot leave
@@ -108,13 +108,13 @@ try {
     & $powercfg /batteryreport /xml /output $xmlPath
 
     if ($LASTEXITCODE -ne 0) {
-        throw "powercfg failed with exit code $LASTEXITCODE."
+        throw "生成 XML 报告失败，powercfg 退出代码：$LASTEXITCODE"
     }
     if (-not (Test-Path -LiteralPath $xmlPath)) {
-        throw 'The XML report was not created. This device or Windows build may not support this report.'
+        throw '没有生成 XML 报告；此设备或 Windows 版本可能不支持该报告。'
     }
     if ((Get-Item -LiteralPath $xmlPath).Length -eq 0) {
-        throw 'The XML report is empty.'
+        throw '生成的 XML 报告为空。'
     }
 
     [xml]$document = New-Object System.Xml.XmlDocument
@@ -449,6 +449,10 @@ try {
     $html = $reportHtml
 
     Set-Content -LiteralPath $htmlPath -Value $html -Encoding UTF8
+
+    if (Test-Path -LiteralPath $nativeHtmlPath) {
+        Remove-Item -LiteralPath $nativeHtmlPath -Force -ErrorAction SilentlyContinue
+    }
 
     Write-Host ''
     Write-Host ("原始 XML 数据：{0}" -f $xmlPath) -ForegroundColor Green
