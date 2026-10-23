@@ -195,6 +195,66 @@ try {
         return [System.Net.WebUtility]::HtmlEncode([string]$Value)
     }
 
+    function Get-FriendlyXmlLabel {
+        param([string]$Name)
+
+        $labels = @{
+            BatteryReport = '报告基本信息'
+            Batteries = '电池列表'
+            Battery = '电池信息'
+            DesignCapacity = '新电池标称容量'
+            FullChargeCapacity = '当前充满时的容量'
+            CycleCount = '累计充放电循环次数'
+            Manufacturer = '制造商'
+            ManufactureName = '电池制造商'
+            ManufactureDate = '生产日期'
+            Model = '设备型号'
+            ModelNumber = '电池型号'
+            SerialNumber = '序列号'
+            Chemistry = '电池类型'
+            DesignVoltage = '设计电压'
+            Voltage = '电池电压'
+            Capacity = '容量'
+            RemainingCapacity = '剩余容量'
+            StartTime = '开始时间'
+            EndTime = '结束时间'
+            Duration = '持续时间'
+            Active = '活动状态'
+            ConnectedStandby = '连接待机'
+            Sleep = '睡眠'
+            Hibernate = '休眠'
+            AC = '连接电源适配器'
+            OnBattery = '使用电池供电'
+            RecentUsage = '最近使用情况'
+            UsageHistory = '使用历史'
+            BatteryUsage = '电池耗电记录'
+            CapacityHistory = '电池容量变化历史'
+            BatteryLifeEstimates = '续航时间估算'
+            FullLifeTime = '满电预计续航时间'
+            EstimatedRunTime = '预计剩余使用时间'
+            ReportTime = '报告生成时间'
+            SystemInfo = '系统信息'
+            ComputerName = '电脑名称'
+            OSVersion = 'Windows 版本'
+            PowerSource = '供电来源'
+            PowerState = '电源状态'
+            Level = '电量水平'
+            State = '状态'
+            Count = '数量'
+            Value = '记录值'
+            Timestamp = '记录时间'
+            Event = '事件'
+            History = '历史记录'
+            Device = '设备信息'
+            Computer = '电脑信息'
+        }
+
+        if ($labels.ContainsKey($Name)) { return $labels[$Name] }
+
+        # If Windows adds a field unknown to this script, keep its name visible but make CamelCase easier to read.
+        return ([regex]::Replace($Name, '(?<=[a-z0-9])(?=[A-Z])', ' '))
+    }
+
     function Get-XmlNodePath {
         param([System.Xml.XmlNode]$Node, [System.Xml.XmlNode]$Section)
         $parts = @()
@@ -353,27 +413,30 @@ try {
                 $path = ConvertTo-HtmlSafe (Get-XmlNodePath -Node $element -Section $sectionNode)
                 $value = [string]$element.InnerText
                 if ([string]::IsNullOrWhiteSpace($value)) { $value = '(空值)' }
-                $fieldRows.Add(('<tr><td class="path">{0}</td><td>{1}</td></tr>' -f $path, (ConvertTo-HtmlSafe $value)))
+                $friendlyLabel = ConvertTo-HtmlSafe (Get-FriendlyXmlLabel -Name $element.LocalName)
+                $fieldRows.Add(('<tr><td><strong>{0}</strong><small class="raw-path">{1}</small></td><td>{2}</td></tr>' -f $friendlyLabel, $path, (ConvertTo-HtmlSafe $value)))
                 $localLeafCount++
             }
             if ($null -ne $element.Attributes) {
                 foreach ($attribute in $element.Attributes) {
                     $path = ConvertTo-HtmlSafe ((Get-XmlNodePath -Node $element -Section $sectionNode) + '/@' + $attribute.LocalName)
-                    $fieldRows.Add(('<tr><td class="path">{0}</td><td>{1}</td></tr>' -f $path, (ConvertTo-HtmlSafe $attribute.Value)))
+                    $friendlyLabel = ConvertTo-HtmlSafe ('属性：' + (Get-FriendlyXmlLabel -Name $attribute.LocalName))
+                    $fieldRows.Add(('<tr><td><strong>{0}</strong><small class="raw-path">{1}</small></td><td>{2}</td></tr>' -f $friendlyLabel, $path, (ConvertTo-HtmlSafe $attribute.Value)))
                     $localAttributeCount++
                 }
             }
         }
 
         $totalFieldCount += $fieldRows.Count
-        $safeSectionName = ConvertTo-HtmlSafe $sectionNode.LocalName
-        $sectionTitle = '{0} — {1} 个字段值（{2} 个叶子节点，{3} 个属性）' -f $safeSectionName, $fieldRows.Count, $localLeafCount, $localAttributeCount
+        $safeSectionName = ConvertTo-HtmlSafe (Get-FriendlyXmlLabel -Name $sectionNode.LocalName)
+        $rawSectionName = ConvertTo-HtmlSafe $sectionNode.LocalName
+        $sectionTitle = '{0}（系统字段：{1}；共 {2} 项信息）' -f $safeSectionName, $rawSectionName, $fieldRows.Count
         $safeSectionTitle = ConvertTo-HtmlSafe $sectionTitle
         $tableRows = $fieldRows -join [Environment]::NewLine
         $sectionDetailHtml = @"
 <details class="xml-section">
 <summary>$safeSectionTitle</summary>
-<div class="table-wrap"><table class="data-table"><thead><tr><th>XML 路径</th><th>值</th></tr></thead><tbody>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>信息名称（已尽量翻译）<br><small>括号内为系统原字段名</small></th><th>系统记录的内容</th></tr></thead><tbody>
 $tableRows
 </tbody></table></div>
 </details>
@@ -466,7 +529,7 @@ h1 { margin:6px 0 5px; font-size:clamp(28px,5vw,38px); line-height:1.2; letter-s
 .data-table { width:100%; border-collapse:collapse; min-width:460px; }
 .data-table th,.data-table td { text-align:left; padding:9px; border-bottom:1px solid var(--line); vertical-align:top; font-size:12px; overflow-wrap:anywhere; }
 .data-table th { color:var(--muted); background:#fff; }
-.data-table td.path { width:43%; color:#52627a; font:11px Consolas,"Courier New",monospace; }
+.data-table td.path { width:43%; color:#52627a; font:11px Consolas,"Courier New",monospace; } .raw-path { display:block; margin-top:3px; color:#929db0; font:10px Consolas,"Courier New",monospace; overflow-wrap:anywhere; }
 details.raw { border:1px solid #e5eaf1; border-radius:10px; overflow:hidden; margin-top:14px; }
 details.raw summary { cursor:pointer; padding:12px 13px; background:#f7f9fc; font-size:12px; font-weight:700; }
 pre { margin:0; padding:14px; max-height:520px; overflow:auto; font:11px/1.5 Consolas,"Courier New",monospace; white-space:pre; background:#111b2d; color:#e1e9f5; }
@@ -488,7 +551,7 @@ pre { margin:0; padding:14px; max-height:520px; overflow:auto; font:11px/1.5 Con
  .tip { background:#1d2e48; border-color:#2e466b; color:#c4d8fb; }
  .advanced-content { border-color:#354257; } .xml-section,.details.raw { border-color:#354257; }
  .xml-section > summary,details.raw summary { background:#243248; } .data-table th { background:#1b2738; }
- .data-table td.path { color:#c0ccdc; } .data-table th,.data-table td { border-color:#354257; }
+ .data-table td.path { color:#c0ccdc; } .raw-path { color:#9aabc2; } .data-table th,.data-table td { border-color:#354257; }
  .empty-state { background:#3a301b; border-color:#645027; } .empty-icon { background:#57451e; color:#ffdfa0; }
  .empty-state p { color:#e1ce9e; }
 }
@@ -529,7 +592,7 @@ $batteryCardsHtml
   <details class="advanced">
     <summary>进阶信息：查看系统提供的全部字段（一般不用看）</summary>
     <div class="advanced-content">
-      <p class="section-intro">以下内容主要用于排查问题。Windows 版本或设备厂商不同，字段名称和数量也可能不同。</p>
+      <p class="section-intro">以下内容主要用于排查问题。常见字段已经尽量翻译成中文；括号下方保留系统原字段名，方便搜索。不同 Windows 版本和设备可能提供不同内容。</p>
       $sectionHtmlText
       <details class="raw"><summary>展开原始 XML 全文（技术内容）</summary><pre>$rawXmlSafe</pre></details>
       <p class="section-intro">原始 XML 文件位置：$safeXmlPath</p>
