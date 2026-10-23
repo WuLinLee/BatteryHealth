@@ -258,13 +258,13 @@ try {
                 $path = ConvertTo-HtmlSafe (Get-XmlNodePath -Node $element -Section $sectionNode)
                 $value = [string]$element.InnerText
                 if ([string]::IsNullOrWhiteSpace($value)) { $value = '(空值)' }
-                $fieldRows.Add('<tr><td class="path">{0}</td><td>{1}</td></tr>' -f $path, (ConvertTo-HtmlSafe $value))
+                $fieldRows.Add(('<tr><td class="path">{0}</td><td>{1}</td></tr>' -f $path, (ConvertTo-HtmlSafe $value)))
                 $localLeafCount++
             }
             if ($null -ne $element.Attributes) {
                 foreach ($attribute in $element.Attributes) {
                     $path = ConvertTo-HtmlSafe ((Get-XmlNodePath -Node $element -Section $sectionNode) + '/@' + $attribute.LocalName)
-                    $fieldRows.Add('<tr><td class="path">{0}</td><td>{1}</td></tr>' -f $path, (ConvertTo-HtmlSafe $attribute.Value))
+                    $fieldRows.Add(('<tr><td class="path">{0}</td><td>{1}</td></tr>' -f $path, (ConvertTo-HtmlSafe $attribute.Value)))
                     $localAttributeCount++
                 }
             }
