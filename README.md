@@ -28,7 +28,7 @@
 |---|---|
 | `BatteryReport.xml` | 原始 XML 数据；供脚本解析、逐项查看和排查问题。 |
 | `BatteryReport-Windows.html` | Windows 自带的完整电池报告，包含系统实际能提供的使用记录、历史、容量历史和电池寿命估算等章节。 |
-| `BatteryHealth.html` | 本项目生成的中文综合报告：健康度概览、全部 XML 字段/属性和原始 XML 全文。 |
+| `BatteryHealth.html` | 面向普通人的中文报告：先看健康度和白话解释；完整 XML 字段和原始内容藏在默认折叠的进阶信息里。 |
 
 这些报告都保存在当前 Windows 用户的桌面。Windows 或固件没有提供的信息不会由脚本自行推断。
 
