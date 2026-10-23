@@ -238,13 +238,13 @@ try {
         '<tr><td>{0}</td><td>{1:N0} mWh</td><td>{2:N0} mWh</td><td><strong>{3}</strong></td><td>{4}</td><td>{5}</td><td><span class="status {6}">{7}</span></td></tr>' -f $safeId, $battery.DesignCapacity, $battery.FullChargeCapacity, $healthText, $wearText, $cycleText, $statusClass, $statusText
     }
 
-    $sectionHtml = [System.Collections.Generic.List[string]]::new()
+    $sectionHtml = New-Object 'System.Collections.Generic.List[string]'
     $totalElementCount = 0
     $totalFieldCount = 0
     foreach ($sectionNode in $document.DocumentElement.ChildNodes) {
         if ($sectionNode.NodeType -ne [System.Xml.XmlNodeType]::Element) { continue }
         $elementNodes = @($sectionNode) + @($sectionNode.SelectNodes('.//*'))
-        $fieldRows = [System.Collections.Generic.List[string]]::new()
+        $fieldRows = New-Object 'System.Collections.Generic.List[string]'
         $localLeafCount = 0
         $localAttributeCount = 0
 
@@ -394,8 +394,11 @@ $sectionHtmlText
 
     Write-Host ''
     Write-Host ("XML report saved at: {0}" -f $xmlPath) -ForegroundColor Green
-    Write-Host ("HTML report saved at: {0}" -f $htmlPath) -ForegroundColor Green
-    Write-Host 'Opening the HTML report in your default browser...' -ForegroundColor Cyan
+    if ($nativeHtmlAvailable) {
+        Write-Host ("Windows full report saved at: {0}" -f $nativeHtmlPath) -ForegroundColor Green
+    }
+    Write-Host ("Detailed HTML report saved at: {0}" -f $htmlPath) -ForegroundColor Green
+    Write-Host 'Opening the detailed HTML report in your default browser...' -ForegroundColor Cyan
     Start-Process -FilePath $htmlPath
     Write-Host 'Health = Full charge capacity / Design capacity * 100%.'
     Write-Host 'A result above 100% can occur and does not automatically mean a fault.'
