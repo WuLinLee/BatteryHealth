@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = 'Stop'
+﻿﻿$ErrorActionPreference = 'Stop'
 
 # Battery health checker inspired by open-source PowerShell implementations:
 # - homotechsual/Blog-Scripts: powercfg XML report parsing
@@ -393,78 +393,7 @@ try {
 "@
     }
 
-    $sectionHtml = New-Object 'System.Collections.Generic.List[string]'
-    $totalElementCount = 0
-    $totalFieldCount = 0
-    foreach ($sectionNode in $document.DocumentElement.ChildNodes) {
-        if ($sectionNode.NodeType -ne [System.Xml.XmlNodeType]::Element) { continue }
-        $elementNodes = @($sectionNode) + @($sectionNode.SelectNodes('.//*'))
-        $fieldRows = New-Object 'System.Collections.Generic.List[string]'
-        $localLeafCount = 0
-        $localAttributeCount = 0
-
-        foreach ($element in $elementNodes) {
-            $totalElementCount++
-            $hasElementChild = $false
-            foreach ($child in $element.ChildNodes) {
-                if ($child.NodeType -eq [System.Xml.XmlNodeType]::Element) { $hasElementChild = $true; break }
-            }
-            if (-not $hasElementChild) {
-                $path = ConvertTo-HtmlSafe (Get-XmlNodePath -Node $element -Section $sectionNode)
-                $value = [string]$element.InnerText
-                if ([string]::IsNullOrWhiteSpace($value)) { $value = '(空值)' }
-                $friendlyLabel = ConvertTo-HtmlSafe (Get-FriendlyXmlLabel -Name $element.LocalName)
-                $fieldRows.Add(('<tr><td><strong>{0}</strong><small class="raw-path">{1}</small></td><td>{2}</td></tr>' -f $friendlyLabel, $path, (ConvertTo-HtmlSafe $value)))
-                $localLeafCount++
-            }
-            if ($null -ne $element.Attributes) {
-                foreach ($attribute in $element.Attributes) {
-                    $path = ConvertTo-HtmlSafe ((Get-XmlNodePath -Node $element -Section $sectionNode) + '/@' + $attribute.LocalName)
-                    $friendlyLabel = ConvertTo-HtmlSafe ('属性：' + (Get-FriendlyXmlLabel -Name $attribute.LocalName))
-                    $fieldRows.Add(('<tr><td><strong>{0}</strong><small class="raw-path">{1}</small></td><td>{2}</td></tr>' -f $friendlyLabel, $path, (ConvertTo-HtmlSafe $attribute.Value)))
-                    $localAttributeCount++
-                }
-            }
-        }
-
-        $totalFieldCount += $fieldRows.Count
-        $safeSectionName = ConvertTo-HtmlSafe (Get-FriendlyXmlLabel -Name $sectionNode.LocalName)
-        $rawSectionName = ConvertTo-HtmlSafe $sectionNode.LocalName
-        $sectionTitle = '{0}（系统字段：{1}；共 {2} 项信息）' -f $safeSectionName, $rawSectionName, $fieldRows.Count
-        $safeSectionTitle = ConvertTo-HtmlSafe $sectionTitle
-        $tableRows = $fieldRows -join [Environment]::NewLine
-        $sectionDetailHtml = @"
-<details class="xml-section">
-<summary>$safeSectionTitle</summary>
-<div class="table-wrap"><table class="data-table"><thead><tr><th>信息名称（已尽量翻译）<br><small>下方小字保留系统原字段路径</small></th><th>系统记录的内容</th></tr></thead><tbody>
-$tableRows
-</tbody></table></div>
-</details>
-"@
-        $sectionHtml.Add($sectionDetailHtml)
-    }
-
-    $xmlText = [System.IO.File]::ReadAllText($xmlPath)
-    $rawXmlSafe = ConvertTo-HtmlSafe $xmlText
-    $sectionHtmlText = $sectionHtml -join [Environment]::NewLine
     $generatedAt = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $xmlInfo = Get-Item -LiteralPath $xmlPath
-    $xmlSizeKb = [math]::Round($xmlInfo.Length / 1KB, 1)
-    if ($nativeHtmlAvailable) {
-        $nativeHtmlLink = '<a class="link-button" href="BatteryReport-Windows.html">打开 Windows 原生完整电池报告</a>'
-        $nativeStatusText = '已生成'
-    } else {
-        $nativeHtmlLink = '<span class="muted">Windows 原生报告未生成；下方仍会显示 XML 全部可用字段。</span>'
-        $nativeStatusText = '未生成'
-    }
-    if ($batteries.Count -gt 0) {
-        $batterySummary = '识别到 {0} 个包含设计容量和满充容量的电池条目。' -f $batteries.Count
-    } else {
-        $batterySummary = '未识别到包含有效设计容量和满充容量的电池条目。请查看下方 XML 字段；脚本不会猜测健康度。'
-    }
-    $safeBatterySummary = ConvertTo-HtmlSafe $batterySummary
-    $safeGeneratedAt = ConvertTo-HtmlSafe $generatedAt
-    $safeXmlPath = ConvertTo-HtmlSafe $xmlPath
 
     # Translate the native Windows battery report in place, then insert the health summary
     # at the top. We only translate visible text between tags; charts, tables, history and CSS remain.
@@ -610,15 +539,13 @@ $tableRows
     Set-Content -LiteralPath $htmlPath -Value $html -Encoding UTF8
 
     Write-Host ''
-    Write-Host ("XML report saved at: {0}" -f $xmlPath) -ForegroundColor Green
-    if ($nativeHtmlAvailable) {
-        Write-Host ("Windows full report saved at: {0}" -f $nativeHtmlPath) -ForegroundColor Green
-    }
-    Write-Host ("Friendly HTML report saved at: {0}" -f $htmlPath) -ForegroundColor Green
-    Write-Host 'Opening the detailed HTML report in your default browser...' -ForegroundColor Cyan
+    Write-Host ("原始 XML 数据：{0}" -f $xmlPath) -ForegroundColor Green
+    Write-Host ("合并后的中文完整报告：{0}" -f $htmlPath) -ForegroundColor Green
+    Write-Host '已把健康度摘要和翻译后的 Windows 原版电池报告合并到同一个 HTML 文件。' -ForegroundColor Cyan
+    Write-Host '正在打开浏览器...' -ForegroundColor Cyan
     Start-Process -FilePath $htmlPath
-    Write-Host 'Health = Full charge capacity / Design capacity * 100%.'
-    Write-Host 'A result above 100% can occur and does not automatically mean a fault.'
+    Write-Host '健康度 = 当前满充容量 ÷ 新电池标称容量 × 100%。'
+    Write-Host '原始 XML 已保留；Windows 原始 HTML 的历史内容和图表已合并到中文报告。'
 }
 catch {
     if (Test-Path -LiteralPath $nativeHtmlPath) {
