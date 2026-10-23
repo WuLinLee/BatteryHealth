@@ -1,4 +1,4 @@
-﻿﻿$ErrorActionPreference = 'Stop'
+﻿﻿﻿$ErrorActionPreference = 'Stop'
 
 # Battery health checker inspired by open-source PowerShell implementations:
 # - homotechsual/Blog-Scripts: powercfg XML report parsing
@@ -188,97 +188,11 @@ try {
         }
     }
 
-    # Render all XML leaf values and attributes, including fields unknown to this script.
+    # HTML-encode values before placing battery identifiers and labels into the report.
     function ConvertTo-HtmlSafe {
         param([AllowNull()][object]$Value)
         if ($null -eq $Value) { return '' }
         return [System.Net.WebUtility]::HtmlEncode([string]$Value)
-    }
-
-    function Get-FriendlyXmlLabel {
-        param([string]$Name)
-
-        $labels = @{
-            BatteryReport = '报告基本信息'
-            Batteries = '电池列表'
-            Battery = '电池信息'
-            DesignCapacity = '新电池标称容量'
-            FullChargeCapacity = '当前充满时的容量'
-            CycleCount = '累计充放电循环次数'
-            Manufacturer = '制造商'
-            ManufactureName = '电池制造商'
-            ManufactureDate = '生产日期'
-            Model = '设备型号'
-            ModelNumber = '电池型号'
-            SerialNumber = '序列号'
-            Chemistry = '电池类型'
-            DesignVoltage = '设计电压'
-            Voltage = '电池电压'
-            Capacity = '容量'
-            RemainingCapacity = '剩余容量'
-            StartTime = '开始时间'
-            EndTime = '结束时间'
-            Duration = '持续时间'
-            Active = '活动状态'
-            ConnectedStandby = '连接待机'
-            Sleep = '睡眠'
-            Hibernate = '休眠'
-            AC = '连接电源适配器'
-            OnBattery = '使用电池供电'
-            RecentUsage = '最近使用情况'
-            UsageHistory = '使用历史'
-            BatteryUsage = '电池耗电记录'
-            CapacityHistory = '电池容量变化历史'
-            BatteryLifeEstimates = '续航时间估算'
-            FullLifeTime = '满电预计续航时间'
-            EstimatedRunTime = '预计剩余使用时间'
-            ReportTime = '报告生成时间'
-            SystemInfo = '系统信息'
-            ComputerName = '电脑名称'
-            OSVersion = 'Windows 版本'
-            PowerSource = '供电来源'
-            PowerState = '电源状态'
-            Level = '电量水平'
-            State = '状态'
-            Count = '数量'
-            Value = '记录值'
-            Timestamp = '记录时间'
-            Event = '事件'
-            History = '历史记录'
-            Device = '设备信息'
-            Computer = '电脑信息'
-        }
-
-        if ($labels.ContainsKey($Name)) { return $labels[$Name] }
-
-        # If Windows adds a field unknown to this script, keep its name visible but make CamelCase easier to read.
-        return ([regex]::Replace($Name, '(?<=[a-z0-9])(?=[A-Z])', ' '))
-    }
-
-    function Get-XmlNodePath {
-        param([System.Xml.XmlNode]$Node, [System.Xml.XmlNode]$Section)
-        $parts = @()
-        $current = $Node
-        while ($null -ne $current -and $current.NodeType -eq [System.Xml.XmlNodeType]::Element) {
-            $segment = $current.LocalName
-            $parent = $current.ParentNode
-            if ($null -ne $parent) {
-                $siblings = @($parent.ChildNodes | Where-Object {
-                    $_.NodeType -eq [System.Xml.XmlNodeType]::Element -and $_.LocalName -eq $current.LocalName
-                })
-                if ($siblings.Count -gt 1) {
-                    $ordinal = 1
-                    for ($i = 0; $i -lt $siblings.Count; $i++) {
-                        if ([object]::ReferenceEquals($siblings[$i], $current)) { $ordinal = $i + 1; break }
-                    }
-                    $segment = '{0} [{1}]' -f $segment, $ordinal
-                }
-            }
-            $parts = @($segment) + $parts
-            if ([object]::ReferenceEquals($current, $Section)) { break }
-            $current = $parent
-        }
-        return '/' + ($parts -join '/')
     }
 
     # Build plain-language cards for everyday users. Technical XML remains available below.
