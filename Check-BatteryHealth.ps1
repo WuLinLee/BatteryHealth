@@ -411,7 +411,7 @@ $tableRows
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>电池健康体检报告</title>
 <style>
-:root { color-scheme: light; --ink:#15243b; --muted:#67768d; --line:#e6ebf2; --paper:#f3f6fb; --blue:#2864e8; }
+:root { color-scheme: light dark; --ink:#15243b; --muted:#67768d; --line:#e6ebf2; --paper:#f3f6fb; --blue:#2864e8; }
 * { box-sizing:border-box; }
 body { margin:0; padding:28px 16px 48px; font-family:"Segoe UI","Microsoft YaHei",sans-serif; background:var(--paper); color:var(--ink); line-height:1.6; }
 main { max-width:960px; margin:0 auto; }
@@ -431,7 +431,7 @@ h1 { margin:6px 0 5px; font-size:clamp(28px,5vw,38px); line-height:1.2; letter-s
 .health-copy h3 { margin:0 0 5px; font-size:20px; line-height:1.35; }
 .health-copy p { margin:0; color:#586982; font-size:14px; }
 .health-track { background:#e9eef5; height:12px; border-radius:99px; overflow:hidden; margin-top:15px; }
-.health-fill { height:100%; border-radius:99px; background:#17a66a; min-width:0; }
+.health-fill { height:100%; border-radius:99px; background:#17a66a; min-width:0; } .health-fill.good { background:#17a66a; }
 .health-fill.warn { background:#e6a327; } .health-fill.bad { background:#dc5555; } .health-fill.unknown { background:#aab3c0; }
 .track-caption { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:#7a8799; font-size:11px; margin-top:7px; }
 .detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:23px; }
