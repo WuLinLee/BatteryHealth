@@ -275,14 +275,15 @@ try {
         $sectionTitle = '{0} — {1} 个字段值（{2} 个叶子节点，{3} 个属性）' -f $safeSectionName, $fieldRows.Count, $localLeafCount, $localAttributeCount
         $safeSectionTitle = ConvertTo-HtmlSafe $sectionTitle
         $tableRows = $fieldRows -join [Environment]::NewLine
-        $sectionHtml.Add(@"
+        $sectionDetailHtml = @"
 <details class="xml-section">
 <summary>$safeSectionTitle</summary>
 <div class="table-wrap"><table class="data-table"><thead><tr><th>XML 路径</th><th>值</th></tr></thead><tbody>
 $tableRows
 </tbody></table></div>
 </details>
-"@)
+"@
+        $sectionHtml.Add($sectionDetailHtml)
     }
 
     $xmlText = [System.IO.File]::ReadAllText($xmlPath)
