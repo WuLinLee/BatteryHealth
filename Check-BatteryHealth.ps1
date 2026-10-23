@@ -369,7 +369,7 @@ try {
     <div class="health-number">$healthText</div>
     <div class="health-copy"><h3>$safeHeadline</h3><p>$safePlainExplanation</p></div>
   </div>
-  <div class="health-track" role="img" aria-label="按设计容量比例显示当前满充容量"><div class="health-fill $statusClass" style="width:$barWidth%"></div></div>
+  <div class="health-track" role="img" aria-label="按设计容量比例显示当前满充容量"><div class="health-fill $statusClass" style="width:${barWidth}%"></div></div>
   <div class="track-caption"><span>新电池标称容量：100%</span><span>当前满充容量：$healthText</span></div>
   <div class="detail-grid">
     <div class="detail-card"><span class="detail-label">新电池时的标称容量</span><strong>$safeDesignWh</strong><small>设计容量 · $safeDesignMwh</small></div>
