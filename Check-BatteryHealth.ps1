@@ -65,7 +65,7 @@ function Get-BatteryEntries {
             $id = $node.Attributes['id'].Value
         }
         if ([string]::IsNullOrWhiteSpace($id)) {
-            $id = 'Battery ' + ($items.Count + 1)
+            $id = '电池 ' + ($items.Count + 1)
         }
 
         $items += [PSCustomObject]@{
@@ -321,7 +321,6 @@ try {
         @{ English = 'Battery capacity history'; Chinese = '电池容量变化历史' },
         @{ English = 'Battery life estimates'; Chinese = '电池续航时间估算' },
         @{ English = 'Battery life estimate'; Chinese = '电池续航时间估算' },
-        @{ English = 'Battery usage'; Chinese = '电池耗电情况' },
         @{ English = 'NAME'; Chinese = '电池名称' },
         @{ English = 'MANUFACTURER'; Chinese = '制造商' },
         @{ English = 'SERIAL NUMBER'; Chinese = '序列号' },
@@ -331,6 +330,16 @@ try {
         @{ English = 'CYCLE COUNT'; Chinese = '充放电循环次数' },
         @{ English = 'Report time'; Chinese = '报告生成时间' },
         @{ English = 'Computer name'; Chinese = '电脑名称' },
+        @{ English = 'BIOS'; Chinese = 'BIOS 版本' },
+        @{ English = 'SYSTEM SKU'; Chinese = '系统产品编号' },
+        @{ English = 'POWER SOURCE'; Chinese = '电源来源' },
+        @{ English = 'Power source'; Chinese = '电源来源' },
+        @{ English = 'AC usage'; Chinese = '接通电源使用时长' },
+        @{ English = 'Battery usage'; Chinese = '电池耗电情况' },
+        @{ English = 'Current estimate'; Chinese = '当前估算' },
+        @{ English = 'Estimated runtime'; Chinese = '预计续航时间' },
+        @{ English = 'Charge level'; Chinese = '电量水平' },
+        @{ English = 'Percentage remaining'; Chinese = '剩余电量百分比' },
         @{ English = 'System product name'; Chinese = '电脑型号' },
         @{ English = 'OS build'; Chinese = 'Windows 版本号' },
         @{ English = 'Platform role'; Chinese = '设备类型' },
