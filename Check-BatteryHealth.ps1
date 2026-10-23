@@ -393,7 +393,7 @@ try {
 
     $summaryCss = @"
 <style id="batteryhealth-summary-style">
-#batteryhealth-summary { font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif; color:#182235; max-width:1120px; margin:24px auto 32px; padding:0 18px; line-height:1.6; }
+#batteryhealth-summary { font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif; color:#182235; width:100%; max-width:none; margin:0; padding:30px 20px 32px; line-height:1.6; background:#f4f7fb !important; border-bottom:1px solid #dce4ef; }
 #batteryhealth-summary * { box-sizing:border-box; }
 #batteryhealth-summary .bh-intro { padding:4px 2px 18px; }
 #batteryhealth-summary .bh-brand { color:#2864e8; font-size:11px; font-weight:800; letter-spacing:1.5px; }
@@ -435,6 +435,102 @@ try {
  #batteryhealth-summary .health-number { font-size:58px; }
  #batteryhealth-summary .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
  #batteryhealth-summary .detail-card strong { font-size:17px; }
+}
+
+/* ---- Force a clean white report, regardless of the Windows report's built-in dark theme ---- */
+html { background:#ffffff !important; color-scheme:light !important; }
+body {
+  background:#ffffff !important; background-color:#ffffff !important; color:#263445 !important;
+  font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif !important;
+  letter-spacing:normal !important; margin:0 !important; padding:0 0 42px !important;
+}
+#batteryhealth-summary .bh-intro,
+#batteryhealth-summary .battery-card,
+#batteryhealth-summary .bh-note,
+#batteryhealth-summary .bh-native-title {
+  width:100%; max-width:1120px; margin-left:auto; margin-right:auto;
+}
+#batteryhealth-summary .bh-intro { padding-bottom:20px; }
+#batteryhealth-summary .bh-card, #batteryhealth-summary .battery-card {
+  background:#ffffff !important; color:#263445 !important; border:1px solid #dfe6ef !important;
+}
+#batteryhealth-summary .bh-note { background:#f0f6ff !important; color:#385478 !important; }
+#batteryhealth-summary .bh-native-title { margin-top:24px; }
+
+/* Main title */
+body > h1 {
+  max-width:1120px !important; margin:28px auto 14px !important; padding:0 22px !important;
+  color:#173d78 !important; background:transparent !important; border:0 !important;
+  font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif !important;
+  font-size:28px !important; font-weight:700 !important; line-height:1.3 !important;
+  letter-spacing:normal !important;
+}
+
+/* Clear, numbered-looking section bands */
+body > h2 {
+  max-width:1120px !important; margin:30px auto 10px !important; padding:12px 15px !important;
+  color:#1d3b68 !important; background:#edf4ff !important;
+  border:1px solid #d8e5f8 !important; border-left:5px solid #3978e8 !important;
+  border-radius:8px !important; box-sizing:border-box !important;
+  font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif !important;
+  font-size:18px !important; font-weight:700 !important; line-height:1.4 !important;
+  letter-spacing:normal !important;
+}
+body > .explanation, body > .explanation2 {
+  max-width:1120px !important; margin:7px auto 12px !important; padding:0 22px !important;
+  color:#68778d !important; background:transparent !important; font-size:13px !important;
+  font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif !important; letter-spacing:normal !important;
+}
+
+/* Tables: white cells, soft-gray headings, alternating rows, consistent spacing */
+body > table {
+  width:calc(100% - 44px) !important; max-width:1120px !important; margin:12px auto 28px !important;
+  table-layout:auto !important; border-collapse:separate !important; border-spacing:0 !important;
+  border:1px solid #dce4ee !important; border-radius:10px !important; overflow:hidden !important;
+  background:#ffffff !important; background-color:#ffffff !important; color:#2f3b4d !important;
+  box-shadow:0 4px 15px rgba(30,50,80,.045) !important;
+  font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif !important; letter-spacing:normal !important;
+  font-size:13px !important;
+}
+body > table thead, body > table thead tr, body > table thead td {
+  background:#edf2f9 !important; background-color:#edf2f9 !important; color:#344054 !important;
+}
+body > table td, body > table th {
+  padding:10px 12px !important; color:#344054 !important; background:#ffffff !important;
+  border:0 !important; border-bottom:1px solid #e6ebf2 !important;
+  font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif !important;
+  letter-spacing:normal !important; font-size:13px !important; vertical-align:top !important;
+}
+body > table thead td, body > table th {
+  background:#edf2f9 !important; color:#334155 !important; font-weight:700 !important;
+}
+body > table tr.even td, body > table .even td { background:#f8fafc !important; }
+body > table tr.odd td, body > table .odd td { background:#ffffff !important; }
+body > table tr.dc.even td, body > table tr.dc.odd td,
+body > table .dc.even td, body > table .dc.odd td {
+  background:#fff0f0 !important; color:#8e343d !important;
+}
+body > table tr.even.suspend td, body > table tr.odd.suspend td,
+body > table .even.suspend td, body > table .odd.suspend td {
+  background:#f2f0ff !important; color:#4b4380 !important;
+}
+body > table .label, body > table td.label, body > table span.label {
+  background:transparent !important; color:#65738a !important; font-weight:700 !important;
+}
+body > table .nobatts, body > table td.nobatts {
+  background:#fff6e5 !important; color:#805b17 !important;
+}
+body > table td.colBreak { padding:0 !important; background:#ffffff !important; border:0 !important; }
+body > table tr:last-child td { border-bottom:0 !important; }
+body svg { background:transparent !important; }
+body svg text { fill:#46566d !important; color:#46566d !important; font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif !important; }
+body .explanation, body .explanation2 { color:#68778d !important; }
+body hr { border:0 !important; border-top:1px solid #e1e7ef !important; }
+body a { color:#245fc8 !important; }
+@media(max-width:720px) {
+  body > h1, body > h2, body > .explanation, body > .explanation2 { margin-left:14px !important; margin-right:14px !important; }
+  body > table { width:calc(100% - 28px) !important; }
+  body > h2 { font-size:16px !important; }
 }
 </style>
 "@
