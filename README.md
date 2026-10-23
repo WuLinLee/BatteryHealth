@@ -6,9 +6,10 @@
 
 - 通过 `powercfg /batteryreport /xml` 生成原始 XML 报告。
 - 额外通过 Windows 原生命令生成完整 HTML 电池报告，保留 Windows 提供的历史图表和估算章节。
-- 自动生成中文 `BatteryHealth.html` 详细报告，并尝试用默认浏览器打开。
-- 在中文报告中展示电池健康度概览，以及 XML 中**所有可读的叶子节点值和属性**，不仅限于设计容量、满充容量和循环次数。
-- 按 XML 一级节点分组展示完整字段，并提供可折叠明细、搜索提示和原始 XML 全文。
+- 自动生成面向普通用户的中文 `BatteryHealth.html` 报告，并尝试用默认浏览器打开。
+- 首屏用大号健康度、简单结论、容量对比条和信息卡解释电池现状；用日常语言说明健康度、容量损耗和循环次数。
+- 将技术字段、XML 路径和原始 XML 全文收纳到默认折叠的“进阶信息”中，普通用户不用阅读这些内容。
+- 保留 XML 中**所有可读的叶子节点值和属性**，展开进阶信息后仍可逐项查看。
 - 尽可能处理报告中多块电池的情况。
 - 如果 XML 缺少可计算健康度的容量数据，仍会生成详细 XML 查看报告，不会编造健康度。
 - 采用 XML DOM / XPath 的命名空间容错方式，不解析 HTML，不使用 WMI，不需要管理员权限（取决于系统策略）。
@@ -18,8 +19,8 @@
 1. 下载 `一键查电池.bat` 和 `Check-BatteryHealth.ps1`，放在同一个文件夹。
 2. 双击 `一键查电池.bat`。
 3. 脚本会在桌面生成报告，并自动尝试打开 `BatteryHealth.html`。
-4. 浏览器报告中可展开“XML 全部字段”各个章节；按 **Ctrl+F** 搜索想查看的字段名。
-5. 如果自动打开失败，可手动双击桌面上的 `BatteryHealth.html`。也可打开 `BatteryReport-Windows.html` 查看 Windows 原生的详细报告。
+4. 日常只看电池健康度和下面的白话说明即可；一般不需要展开最底部的“进阶信息”。如果需要排查问题，再展开全部 XML 字段并按 **Ctrl+F** 搜索。
+5. 如果自动打开失败，可手动双击桌面上的 `BatteryHealth.html`。也可打开 `BatteryReport-Windows.html` 查看 Windows 原生详细报告。
 
 ## 运行后会生成哪些文件？
 
@@ -32,6 +33,12 @@
 这些报告都保存在当前 Windows 用户的桌面。Windows 或固件没有提供的信息不会由脚本自行推断。
 
 ## 报告里展示哪些信息？
+
+### 普通用户先看这里
+
+中文报告将健康度放在最醒目的位置，并用一句话说明结果，再配上容量比例条和四张小卡片。关键字段均提供日常用语解释，而不是要求用户理解 XML 或技术名词。
+
+页面的状态提示使用简单参考区间（健康度 90% 以上、80–89.9%、50–79.9%、低于 50%）来帮助阅读；这些区间是界面提示，不是对电池是否故障的诊断，也不应单独作为更换依据。微软文档指出，电池可用容量低于设计容量的 80% 可作为电池接近寿命终点的一般参考，但实际情况会受到设备与使用方式影响。
 
 ### 电池健康度概览
 
@@ -68,10 +75,12 @@
 
 ## 开源实现与官方文档参考
 
-本项目优先参考社区已有实现中经过实践的思路，并结合当前需求实现完整字段查看；没有直接复制这些项目的完整代码。使用前建议同时查看原项目的许可证与最新说明。
+本项目优先参考社区已有实现中经过实践的思路，并结合当前需求实现完整字段查看；没有直接复制这些项目的完整代码。界面上借鉴“先呈现关键健康度、再提供简短解释、技术数据按需展开”的常见易读设计思路。使用前建议同时查看原项目的许可证与最新说明。
 
 - [homotechsual/Blog-Scripts — Monitoring/BatteryHealth.ps1](https://github.com/homotechsual/Blog-Scripts/blob/main/Monitoring/BatteryHealth.ps1)：使用 `powercfg /batteryreport /XML` 并通过 XML 路径读取电池字段。
-- [NSTechBytes/BatteryHealth](https://github.com/NSTechBytes/BatteryHealth)：电池健康度脚本实现参考。
+- [NSTechBytes/BatteryHealth](https://github.com/NSTechBytes/BatteryHealth)：电池健康度脚本实现参考，重点输出健康度、循环次数和容量。
+- [scavin/BatteryHealth](https://github.com/scavin/BatteryHealth)：极简 Windows 电池健康查看器；参考其以大号健康度和简明电池信息为主的界面安排。
+- [koetsuji/Windows-Battery-Report](https://github.com/koetsuji/Windows-Battery-Report)：浏览器仪表盘风格的电池报告工具；参考其把关键指标前置展示的思路。
 - [auberginehill/get-battery-info](https://github.com/auberginehill/get-battery-info)：展示一般计算机与电池信息，并保存 Windows 电池报告文件。
 - [Microsoft Learn — powercfg 命令行选项（中文）](https://learn.microsoft.com/zh-cn/windows-hardware/design/device-experiences/powercfg-command-line-options)：官方说明 `/batteryreport`、`/output` 和 `/xml` 等选项。
 
