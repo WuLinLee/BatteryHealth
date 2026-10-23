@@ -517,9 +517,14 @@ body > table .even.suspend td, body > table .odd.suspend td {
 body > table .label, body > table td.label, body > table span.label {
   background:transparent !important; color:#65738a !important; font-weight:700 !important;
 }
-body > table .nobatts, body > table td.nobatts {
+body > table .nobatts, body > table td.nobatts, body .nobatts {
   background:#fff6e5 !important; color:#805b17 !important;
 }
+body .even { background:#f8fafc !important; color:#334155 !important; }
+body .odd { background:#ffffff !important; color:#334155 !important; }
+body .even.suspend, body .odd.suspend { background:#f2f0ff !important; color:#4b4380 !important; }
+body .dc.even, body .dc.odd { background:#fff0f0 !important; color:#8e343d !important; }
+body .noncontigbreak { background:#f7f9fc !important; color:#52627a !important; }
 body > table td.colBreak { padding:0 !important; background:#ffffff !important; border:0 !important; }
 body > table tr:last-child td { border-bottom:0 !important; }
 body svg { background:transparent !important; }
